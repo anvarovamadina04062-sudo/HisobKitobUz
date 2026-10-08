@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>HisobKitobUz</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div>
+        <div class="brand">HisobKitobUz</div>
+        <div class="mini">mini app</div>
+      </div>
+      <button class="more">•••</button>
+    </header>
+
+    <section class="hero">
+      <div class="wallet">💰</div>
+      <div>
+        <h1>HisobKitobUz</h1>
+        <p>Shaxsiy moliyaviy yordamchingiz 🌱</p>
+      </div>
+    </section>
+
+    <section class="balance card">
+      <div class="row">
+        <span>Jami balans</span>
+        <span id="date"></span>
+      </div>
+      <div class="amount" id="balance">0 so'm</div>
+      <div class="summary">
+        <div class="income"><span>↑ Daromad</span><b id="income">0 so'm</b></div>
+        <div class="expense"><span>↓ Xarajat</span><b id="expense">0 so'm</b></div>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button class="action green" onclick="addTransaction('expense')"><strong>＋</strong><span><b>Xarajat qo‘shish</b><small>Pul chiqimini kiriting</small></span></button>
+      <button class="action blue" onclick="addTransaction('income')"><strong>＋</strong><span><b>Daromad qo‘shish</b><small>Pul tushumini kiriting</small></span></button>
+      <button class="action purple" onclick="showStats()"><strong>▥</strong><span><b>Statistika</b><small>Taqqoslash va tahlil</small></span></button>
+      <button class="action yellow" onclick="showHistory()"><strong>▤</strong><span><b>Tarix</b><small>Barcha yozuvlar</small></span></button>
+    </section>
+
+    <section class="card recent">
+      <div class="row"><h2>So‘nggi yozuvlar</h2><button onclick="showHistory()">Barchasi →</button></div>
+      <div id="transactions"></div>
+    </section>
+
+    <nav class="nav">
+      <button class="active" onclick="window.scrollTo({top:0,behavior:'smooth'})">⌂<small>Bosh sahifa</small></button>
+      <button onclick="showStats()">▥<small>Statistika</small></button>
+      <button onclick="showHistory()">▤<small>Tarix</small></button>
+      <button onclick="showProfile()">♙<small>Profil</small></button>
+    </nav>
+  </main>
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+let data = JSON.parse(localStorage.getItem("hisobkitob") || '{"income":0,"expense":0,"items":[]}');
+
+function money(n){ return new Intl.NumberFormat('uz-UZ').format(n) + " so'm"; }
+function save(){ localStorage.setItem("hisobkitob", JSON.stringify(data)); render(); }
+
+function render(){
+  document.getElementById("income").textContent=money(data.income);
+  document.getElementById("expense").textContent=money(data.expense);
+  document.getElementById("balance").textContent=money(data.income-data.expense);
+  document.getElementById("date").textContent=new Date().toLocaleDateString('uz-UZ');
+  const box=document.getElementById("transactions");
+  box.innerHTML = data.items.length ? data.items.slice(0,6).map(x=>`
+    <div class="tx">
+      <span class="icon">${x.type==='income'?'💼':'🛒'}</span>
+      <span class="txname"><b>${escapeHtml(x.name)}</b><small>${x.date}</small></span>
+      <span class="${x.type}">${x.type==='income'?'+':'−'} ${money(x.amount)}</span>
+    </div>`).join('') : '<p class="empty">Hali yozuvlar yo‘q.</p>';
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+
+function addTransaction(type){
+  const label=type==='income'?'Daromad':'Xarajat';
+  const name=prompt(label+' nomi:');
+  if(!name) return;
+  const raw=prompt('Summa (so‘m):');
+  const amount=Number(raw?.replace(/\s/g,'').replace(/,/g,''));
+  if(!amount || amount<0) return alert('Summani to‘g‘ri kiriting.');
+  data[type]+=amount;
+  data.items.unshift({type,name,amount,date:new Date().toLocaleString('uz-UZ')});
+  save();
+}
+function showStats(){ alert(`Daromad: ${money(data.income)}\nXarajat: ${money(data.expense)}\nBalans: ${money(data.income-data.expense)}`); }
+function showHistory(){ alert(data.items.length ? data.items.map(x=>`${x.date} — ${x.name}: ${x.type==='income'?'+':'−'}${money(x.amount)}`).join('\\n') : 'Tarix bo‘sh.'); }
+function showProfile(){
+  const u=tg?.initDataUnsafe?.user;
+  alert(u ? `Telegram foydalanuvchi: ${u.first_name || ''}` : 'Profil Telegram ichida ko‘rinadi.');
+}
+render();
+</script>
+</body>
+</html>
